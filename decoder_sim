@@ -1,0 +1,74 @@
+#! 
+:ivl_version "14.0 (devel)" "(s20260301-391-g64f13540a-dirty)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 12;
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\system.vpi";
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\vhdl_sys.vpi";
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\vhdl_textio.vpi";
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\v2005_math.vpi";
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\va_math.vpi";
+:vpi_module "C:\OSS-CA~1\OSS-CA~1\lib\ivl\v2009.vpi";
+S_00000289c0a8aed0 .scope package, "$unit" "$unit" 2 1;
+ .timescale 0 0;
+S_00000289c0a9b1a0 .scope module, "instruction_decoder_tb" "instruction_decoder_tb" 3 3;
+ .timescale -9 -12;
+v00000289c0a97f90_0 .net "funct", 2 0, L_00000289c0a98c10;  1 drivers
+v00000289c0a98cb0_0 .net "immediate12", 11 0, L_00000289c0a97ef0;  1 drivers
+v00000289c0a98a30_0 .net "immediate9", 8 0, L_00000289c0a98850;  1 drivers
+v00000289c0a98710_0 .var "instruction", 15 0;
+v00000289c0a98210_0 .net "offset6", 5 0, L_00000289c0a98ad0;  1 drivers
+v00000289c0a980d0_0 .net "opcode", 3 0, L_00000289c0a987b0;  1 drivers
+v00000289c0a98b70_0 .net "ra", 2 0, L_00000289c0a988f0;  1 drivers
+v00000289c0a97e50_0 .net "rb", 2 0, L_00000289c0a98530;  1 drivers
+v00000289c0a983f0_0 .net "rd", 2 0, L_00000289c0a98490;  1 drivers
+S_00000289c0a9b330 .scope module, "dut" "instruction_decoder" 3 20, 4 1 0, S_00000289c0a9b1a0;
+ .timescale 0 0;
+    .port_info 0 /INPUT 16 "instruction";
+    .port_info 1 /OUTPUT 4 "opcode";
+    .port_info 2 /OUTPUT 3 "rd";
+    .port_info 3 /OUTPUT 3 "ra";
+    .port_info 4 /OUTPUT 3 "rb";
+    .port_info 5 /OUTPUT 3 "funct";
+    .port_info 6 /OUTPUT 9 "immediate9";
+    .port_info 7 /OUTPUT 12 "immediate12";
+    .port_info 8 /OUTPUT 6 "offset6";
+v00000289c0b5af10_0 .net "funct", 2 0, L_00000289c0a98c10;  alias, 1 drivers
+v00000289c0a66b40_0 .net "immediate12", 11 0, L_00000289c0a97ef0;  alias, 1 drivers
+v00000289c0a9b4c0_0 .net "immediate9", 8 0, L_00000289c0a98850;  alias, 1 drivers
+v00000289c0a9b560_0 .net "instruction", 15 0, v00000289c0a98710_0;  1 drivers
+v00000289c0a97c20_0 .net "offset6", 5 0, L_00000289c0a98ad0;  alias, 1 drivers
+v00000289c0a97cc0_0 .net "opcode", 3 0, L_00000289c0a987b0;  alias, 1 drivers
+v00000289c0a982b0_0 .net "ra", 2 0, L_00000289c0a988f0;  alias, 1 drivers
+v00000289c0a98350_0 .net "rb", 2 0, L_00000289c0a98530;  alias, 1 drivers
+v00000289c0a98170_0 .net "rd", 2 0, L_00000289c0a98490;  alias, 1 drivers
+L_00000289c0a987b0 .part v00000289c0a98710_0, 12, 4;
+L_00000289c0a98490 .part v00000289c0a98710_0, 9, 3;
+L_00000289c0a988f0 .part v00000289c0a98710_0, 6, 3;
+L_00000289c0a98530 .part v00000289c0a98710_0, 3, 3;
+L_00000289c0a98c10 .part v00000289c0a98710_0, 0, 3;
+L_00000289c0a98850 .part v00000289c0a98710_0, 0, 9;
+L_00000289c0a97ef0 .part v00000289c0a98710_0, 0, 12;
+L_00000289c0a98ad0 .part v00000289c0a98710_0, 0, 6;
+    .scope S_00000289c0a9b1a0;
+T_0 ;
+    %vpi_call/w 3 39 "$dumpfile", "instruction_decoder.vcd" {0 0 0};
+    %vpi_call/w 3 40 "$dumpvars", 32'sb00000000000000000000000000000000, S_00000289c0a9b1a0 {0 0 0};
+    %pushi/vec4 1616, 0, 16;
+    %store/vec4 v00000289c0a98710_0, 0, 16;
+    %delay 10000, 0;
+    %pushi/vec4 4613, 0, 16;
+    %store/vec4 v00000289c0a98710_0, 0, 16;
+    %delay 10000, 0;
+    %pushi/vec4 16948, 0, 16;
+    %store/vec4 v00000289c0a98710_0, 0, 16;
+    %delay 10000, 0;
+    %vpi_call/w 3 95 "$finish" {0 0 0};
+    %end;
+    .thread T_0;
+# The file index is used to find the file name in the following table.
+:file_names 5;
+    "N/A";
+    "<interactive>";
+    "-";
+    ".\sim\instruction_decoder_tb.sv";
+    ".\rtl\instruction_decoder.sv";
