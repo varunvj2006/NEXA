@@ -1,0 +1,27 @@
+# Simulation outputs
+*.vcd
+*.fst
+*.lxt
+*.lxt2
+*.vvp
+
+# Compiled simulations
+alu_sim
+reg_sim
+
+# FPGA build outputs
+build/
+*.json
+*.asc
+*.bin
+*.fs
+
+# Tool temporary files
+*.log
+*.jou
+*.tmp
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
