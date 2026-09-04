@@ -1,4 +1,5 @@
 module control_unit (
+
     input logic [3:0] opcode,
 
     input logic [2:0] rd,
@@ -20,23 +21,28 @@ module control_unit (
     output logic [2:0] alu_operation,
 
     output logic write_enable,
-    output logic write_from_alu,
 
-    // Controls when ALU flags are saved
+    output logic write_from_alu,
+    output logic write_from_memory,
+
+    output logic alu_use_immediate,
+
     output logic flag_write_enable,
 
     output logic [15:0] immediate_data,
 
-    // Program counter controls
+    // Memory
+    output logic memory_write_enable,
+
+    // Program counter
     output logic        pc_load,
     output logic [15:0] pc_load_value,
 
-    // CPU control
     output logic halt
+
 );
 
 
-    // NEXA opcodes
     localparam logic [3:0] OP_ALU   = 4'b0000;
     localparam logic [3:0] OP_LDI   = 4'b0001;
     localparam logic [3:0] OP_LOAD  = 4'b0010;
@@ -49,21 +55,29 @@ module control_unit (
 
     always_comb begin
 
-        // --------------------------------
-        // DEFAULT CONTROL SIGNALS
-        // --------------------------------
+        // ========================================
+        // DEFAULTS
+        // ========================================
 
         read_addr_a = ra;
         read_addr_b = rb;
-        write_addr  = rd;
+
+        write_addr = rd;
 
         alu_operation = funct;
 
-        write_enable      = 1'b0;
+        write_enable = 1'b0;
+
         write_from_alu    = 1'b0;
+        write_from_memory = 1'b0;
+
+        alu_use_immediate = 1'b0;
+
         flag_write_enable = 1'b0;
 
         immediate_data = {7'b0, immediate9};
+
+        memory_write_enable = 1'b0;
 
         pc_load       = 1'b0;
         pc_load_value = {4'b0, immediate12};
@@ -71,24 +85,24 @@ module control_unit (
         halt = 1'b0;
 
 
-        // --------------------------------
-        // DECODE OPCODE
-        // --------------------------------
+        // ========================================
+        // OPCODE DECODE
+        // ========================================
 
         case (opcode)
 
-            // -----------------------------
-            // ALU INSTRUCTION
-            // -----------------------------
+
+            // ------------------------------------
+            // ALU
+            // ------------------------------------
+
             OP_ALU: begin
 
-                // Save Z/C/N flags
                 flag_write_enable = 1'b1;
 
-                // CMP updates flags but does not
-                // modify a general-purpose register.
                 if (funct == 3'b111) begin
 
+                    // CMP
                     write_enable = 1'b0;
 
                 end
@@ -102,20 +116,70 @@ module control_unit (
             end
 
 
-            // -----------------------------
+            // ------------------------------------
             // LOAD IMMEDIATE
-            // -----------------------------
+            // ------------------------------------
+
             OP_LDI: begin
 
-                write_enable   = 1'b1;
-                write_from_alu = 1'b0;
+                write_enable = 1'b1;
+
+                write_from_alu    = 1'b0;
+                write_from_memory = 1'b0;
 
             end
 
 
-            // -----------------------------
-            // UNCONDITIONAL JUMP
-            // -----------------------------
+            // ------------------------------------
+            // LOAD
+            //
+            // RD <- MEMORY[RA + offset]
+            // ------------------------------------
+
+            OP_LOAD: begin
+
+                // Calculate address using ADD
+                alu_operation = 3'b000;
+
+                alu_use_immediate = 1'b1;
+
+                // Write RAM result into RD
+                write_enable = 1'b1;
+
+                write_from_memory = 1'b1;
+
+            end
+
+
+            // ------------------------------------
+            // STORE
+            //
+            // MEMORY[RA + offset] <- RD
+            // ------------------------------------
+
+            OP_STORE: begin
+
+                // RA is base-address register
+                read_addr_a = ra;
+
+                // RD field becomes source register
+                read_addr_b = rd;
+
+                // Address = RA + offset
+                alu_operation = 3'b000;
+
+                alu_use_immediate = 1'b1;
+
+                // Write into RAM
+                memory_write_enable = 1'b1;
+
+            end
+
+
+            // ------------------------------------
+            // JMP
+            // ------------------------------------
+
             OP_JMP: begin
 
                 pc_load = 1'b1;
@@ -123,9 +187,10 @@ module control_unit (
             end
 
 
-            // -----------------------------
-            // JUMP IF ZERO
-            // -----------------------------
+            // ------------------------------------
+            // JZ
+            // ------------------------------------
+
             OP_JZ: begin
 
                 if (zero_flag) begin
@@ -135,9 +200,10 @@ module control_unit (
             end
 
 
-            // -----------------------------
-            // JUMP IF NOT ZERO
-            // -----------------------------
+            // ------------------------------------
+            // JNZ
+            // ------------------------------------
+
             OP_JNZ: begin
 
                 if (!zero_flag) begin
@@ -147,9 +213,10 @@ module control_unit (
             end
 
 
-            // -----------------------------
-            // HALT CPU
-            // -----------------------------
+            // ------------------------------------
+            // HALT
+            // ------------------------------------
+
             OP_HALT: begin
 
                 halt = 1'b1;
@@ -158,10 +225,8 @@ module control_unit (
 
 
             default: begin
-
-                // Safe defaults already selected
-
             end
+
 
         endcase
 

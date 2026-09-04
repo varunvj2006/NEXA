@@ -15,7 +15,10 @@ module cpu_tb;
     logic negative;
 
     logic halt;
-
+    logic [15:0] data_address;
+    logic [15:0] data_write_data;
+    logic [15:0] data_read_data;
+    logic        data_write_enable;
 
     // ========================================
     // NEXA CPU
@@ -34,7 +37,25 @@ module cpu_tb;
         .carry(carry),
         .negative(negative),
 
-        .halt(halt)
+        .halt(halt),
+        .data_read_data(data_read_data),
+
+        .data_address(data_address),
+        .data_write_data(data_write_data),
+        .data_write_enable(data_write_enable)
+    );
+    //RAM
+    data_memory ram (
+
+        .clk(clk),
+
+        .write_enable(data_write_enable),
+
+        .address(data_address),
+
+        .write_data(data_write_data),
+        .read_data(data_read_data)
+
     );
 
 
@@ -79,7 +100,7 @@ module cpu_tb;
         reset = 0;
 
 
-        repeat (6) begin
+        repeat (10) begin
             @(posedge clk);
         end
 
@@ -91,22 +112,22 @@ module cpu_tb;
         // AUTOMATIC VERIFICATION
         // ====================================
 
-        if (dut.datapath_unit.reg_file.registers[1] !== 16'd5)
+        if (dut.datapath_unit.reg_file.registers[1] !== 16'd10)
             $error("R1 incorrect!");
 
-        if (dut.datapath_unit.reg_file.registers[2] !== 16'd5)
+        if (dut.datapath_unit.reg_file.registers[2] !== 16'd42)
             $error("R2 incorrect!");
 
-        if (dut.datapath_unit.reg_file.registers[3] !== 16'd42)
-            $error("JZ failed: R3 should be 42!");
+        if (ram.memory[13] !== 16'd42)
+            $error("STORE failed!");
 
-        if (zero !== 1'b1)
-            $error("Stored ZERO flag incorrect!");
+        if (dut.datapath_unit.reg_file.registers[3] !== 16'd42)
+            $error("LOAD failed!");
 
         if (halt !== 1'b1)
             $error("CPU did not halt!");
 
-        $display("NEXA CMP/JZ TEST PASSED");
+        $display("NEXA LOAD/STORE TEST PASSED");
 
         $finish;
 

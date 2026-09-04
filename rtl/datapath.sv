@@ -1,4 +1,5 @@
 module datapath (
+
     input logic clk,
     input logic reset,
 
@@ -7,38 +8,61 @@ module datapath (
     input logic [2:0] read_addr_b,
     input logic [2:0] write_addr,
 
-    // Register write control
-    input logic        write_enable,
+    input logic write_enable,
 
-    // Used to manually load registers
+    // Writeback sources
     input logic [15:0] external_write_data,
+    input logic [15:0] memory_read_data,
 
-   
-    input logic        write_from_alu,  //select alu
+    input logic write_from_alu,
+    input logic write_from_memory,
 
-    // ALU operation
+    // ALU controls
     input logic [2:0] operation,
 
-    // Outputs for debugging
+    input logic        alu_use_immediate,
+    input logic [15:0] alu_immediate_data,
+
+    // Outputs
     output logic [15:0] read_data_a,
     output logic [15:0] read_data_b,
+
     output logic [15:0] alu_result,
 
     output logic zero,
     output logic carry,
     output logic negative
+
 );
 
     logic [15:0] register_write_data;
+    logic [15:0] alu_input_b;
 
 
-    // Choose what gets written into the register file
+    // ============================================
+    // ALU INPUT B MUX
+    // ============================================
+
+    assign alu_input_b =
+        alu_use_immediate ? alu_immediate_data : read_data_b;
+
+
+    // ============================================
+    // REGISTER WRITEBACK MUX
+    // ============================================
+
     assign register_write_data =
-        write_from_alu ? alu_result : external_write_data;
+        write_from_memory ? memory_read_data :
+        write_from_alu    ? alu_result :
+                            external_write_data;
 
 
-    // Register file
+    // ============================================
+    // REGISTER FILE
+    // ============================================
+
     register_file reg_file (
+
         .clk(clk),
         .reset(reset),
 
@@ -51,19 +75,28 @@ module datapath (
 
         .read_data_a(read_data_a),
         .read_data_b(read_data_b)
+
     );
 
 
+    // ============================================
     // ALU
+    // ============================================
+
     alu alu_unit (
+
         .a(read_data_a),
-        .b(read_data_b),
+        .b(alu_input_b),
+
         .operation(operation),
 
         .result(alu_result),
+
         .zero(zero),
         .carry(carry),
         .negative(negative)
+
     );
+
 
 endmodule
