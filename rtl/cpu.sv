@@ -10,11 +10,13 @@ module cpu (
     output logic [15:0] pc,
     output logic [15:0] alu_result,
 
+    // Stored CPU status flags
     output logic zero,
     output logic carry,
     output logic negative,
 
     output logic halt
+
 );
 
     // ============================================
@@ -47,6 +49,8 @@ module cpu (
     logic write_enable;
     logic write_from_alu;
 
+    logic flag_write_enable;
+
     logic [15:0] immediate_data;
 
     logic pc_load;
@@ -59,6 +63,15 @@ module cpu (
 
     logic [15:0] read_data_a;
     logic [15:0] read_data_b;
+
+
+    // ============================================
+    // LIVE ALU FLAGS
+    // ============================================
+
+    logic alu_zero;
+    logic alu_carry;
+    logic alu_negative;
 
 
     // ============================================
@@ -115,6 +128,8 @@ module cpu (
         .immediate9(immediate9),
         .immediate12(immediate12),
 
+        // IMPORTANT:
+        // use STORED zero flag, not live ALU zero
         .zero_flag(zero),
 
         .read_addr_a(read_addr_a),
@@ -125,6 +140,8 @@ module cpu (
 
         .write_enable(write_enable),
         .write_from_alu(write_from_alu),
+
+        .flag_write_enable(flag_write_enable),
 
         .immediate_data(immediate_data),
 
@@ -158,6 +175,27 @@ module cpu (
         .read_data_b(read_data_b),
 
         .alu_result(alu_result),
+
+        // Live ALU flags
+        .zero(alu_zero),
+        .carry(alu_carry),
+        .negative(alu_negative)
+    );
+
+
+    // ============================================
+    // STATUS REGISTER
+    // ============================================
+
+    status_register status_unit (
+        .clk(clk),
+        .reset(reset),
+
+        .write_enable(flag_write_enable),
+
+        .zero_in(alu_zero),
+        .carry_in(alu_carry),
+        .negative_in(alu_negative),
 
         .zero(zero),
         .carry(carry),

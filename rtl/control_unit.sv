@@ -22,6 +22,9 @@ module control_unit (
     output logic write_enable,
     output logic write_from_alu,
 
+    // Controls when ALU flags are saved
+    output logic flag_write_enable,
+
     output logic [15:0] immediate_data,
 
     // Program counter controls
@@ -34,21 +37,21 @@ module control_unit (
 
 
     // NEXA opcodes
-    localparam logic [3:0] OP_ALU  = 4'b0000;
-    localparam logic [3:0] OP_LDI  = 4'b0001;
-    localparam logic [3:0] OP_LOAD = 4'b0010;
+    localparam logic [3:0] OP_ALU   = 4'b0000;
+    localparam logic [3:0] OP_LDI   = 4'b0001;
+    localparam logic [3:0] OP_LOAD  = 4'b0010;
     localparam logic [3:0] OP_STORE = 4'b0011;
-    localparam logic [3:0] OP_JMP  = 4'b0100;
-    localparam logic [3:0] OP_JZ   = 4'b0101;
-    localparam logic [3:0] OP_JNZ  = 4'b0110;
-    localparam logic [3:0] OP_HALT = 4'b1111;
+    localparam logic [3:0] OP_JMP   = 4'b0100;
+    localparam logic [3:0] OP_JZ    = 4'b0101;
+    localparam logic [3:0] OP_JNZ   = 4'b0110;
+    localparam logic [3:0] OP_HALT  = 4'b1111;
 
 
     always_comb begin
 
-        // -------------------------
+        // --------------------------------
         // DEFAULT CONTROL SIGNALS
-        // -------------------------
+        // --------------------------------
 
         read_addr_a = ra;
         read_addr_b = rb;
@@ -56,8 +59,9 @@ module control_unit (
 
         alu_operation = funct;
 
-        write_enable   = 1'b0;
-        write_from_alu = 1'b0;
+        write_enable      = 1'b0;
+        write_from_alu    = 1'b0;
+        flag_write_enable = 1'b0;
 
         immediate_data = {7'b0, immediate9};
 
@@ -67,20 +71,40 @@ module control_unit (
         halt = 1'b0;
 
 
-        // -------------------------
+        // --------------------------------
         // DECODE OPCODE
-        // -------------------------
+        // --------------------------------
 
         case (opcode)
 
+            // -----------------------------
+            // ALU INSTRUCTION
+            // -----------------------------
             OP_ALU: begin
 
-                write_enable   = 1'b1;
-                write_from_alu = 1'b1;
+                // Save Z/C/N flags
+                flag_write_enable = 1'b1;
+
+                // CMP updates flags but does not
+                // modify a general-purpose register.
+                if (funct == 3'b111) begin
+
+                    write_enable = 1'b0;
+
+                end
+                else begin
+
+                    write_enable   = 1'b1;
+                    write_from_alu = 1'b1;
+
+                end
 
             end
 
 
+            // -----------------------------
+            // LOAD IMMEDIATE
+            // -----------------------------
             OP_LDI: begin
 
                 write_enable   = 1'b1;
@@ -89,6 +113,9 @@ module control_unit (
             end
 
 
+            // -----------------------------
+            // UNCONDITIONAL JUMP
+            // -----------------------------
             OP_JMP: begin
 
                 pc_load = 1'b1;
@@ -96,6 +123,9 @@ module control_unit (
             end
 
 
+            // -----------------------------
+            // JUMP IF ZERO
+            // -----------------------------
             OP_JZ: begin
 
                 if (zero_flag) begin
@@ -105,6 +135,9 @@ module control_unit (
             end
 
 
+            // -----------------------------
+            // JUMP IF NOT ZERO
+            // -----------------------------
             OP_JNZ: begin
 
                 if (!zero_flag) begin
@@ -114,6 +147,9 @@ module control_unit (
             end
 
 
+            // -----------------------------
+            // HALT CPU
+            // -----------------------------
             OP_HALT: begin
 
                 halt = 1'b1;
@@ -123,7 +159,7 @@ module control_unit (
 
             default: begin
 
-                // Do nothing
+                // Safe defaults already selected
 
             end
 

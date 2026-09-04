@@ -94,17 +94,19 @@ module cpu_tb;
         if (dut.datapath_unit.reg_file.registers[1] !== 16'd5)
             $error("R1 incorrect!");
 
-        if (dut.datapath_unit.reg_file.registers[2] !== 16'd10)
+        if (dut.datapath_unit.reg_file.registers[2] !== 16'd5)
             $error("R2 incorrect!");
 
-        if (dut.datapath_unit.reg_file.registers[3] !== 16'd15)
-            $error("R3 incorrect!");
+        if (dut.datapath_unit.reg_file.registers[3] !== 16'd42)
+            $error("JZ failed: R3 should be 42!");
+
+        if (zero !== 1'b1)
+            $error("Stored ZERO flag incorrect!");
 
         if (halt !== 1'b1)
             $error("CPU did not halt!");
 
-
-        $display("NEXA CPU + ROM TEST PASSED");
+        $display("NEXA CMP/JZ TEST PASSED");
 
         $finish;
 

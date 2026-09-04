@@ -7,29 +7,28 @@ module instruction_memory (
 
         case (address)
 
-            16'd0: begin
-                instruction = 16'h1205;
-                // LDI R1, 5
-            end
+            16'd0: instruction = 16'h1205;
+            // LDI R1, 5
 
-            16'd1: begin
-                instruction = 16'h140A;
-                // LDI R2, 10
-            end
+            16'd1: instruction = 16'h1405;
+            // LDI R2, 5
 
-            16'd2: begin
-                instruction = 16'h0650;
-                // ADD R3, R1, R2
-            end
+            16'd2: instruction = 16'h0057;
+            // CMP R1, R2
 
-            16'd3: begin
-                instruction = 16'hF000;
-                // HALT
-            end
+            16'd3: instruction = 16'h5005;
+            // JZ 5
 
-            default: begin
-                instruction = 16'hF000;
-            end
+            16'd4: instruction = 16'h1663;
+            // LDI R3, 99 -- should be skipped
+
+            16'd5: instruction = 16'h162A;
+            // LDI R3, 42
+
+            16'd6: instruction = 16'hF000;
+            // HALT
+
+            default: instruction = 16'hF000;
 
         endcase
 
