@@ -18,7 +18,7 @@ module cpu_tb;
 
 
     // ========================================
-    // CPU UNDER TEST
+    // NEXA CPU
     // ========================================
 
     cpu dut (
@@ -39,8 +39,17 @@ module cpu_tb;
 
 
     // ========================================
+    // INSTRUCTION MEMORY
+    // ========================================
+
+    instruction_memory rom (
+        .address(pc),
+        .instruction(instruction)
+    );
+
+
+    // ========================================
     // SIMULATION CLOCK
-    // 10 ns period = 100 MHz
     // ========================================
 
     initial begin
@@ -55,43 +64,6 @@ module cpu_tb;
 
 
     // ========================================
-    // TEMPORARY PROGRAM MEMORY
-    // ========================================
-
-    always_comb begin
-
-        case (pc)
-
-            16'd0: begin
-                instruction = 16'h1205;
-                // LDI R1, 5
-            end
-
-            16'd1: begin
-                instruction = 16'h140A;
-                // LDI R2, 10
-            end
-
-            16'd2: begin
-                instruction = 16'h0650;
-                // ADD R3, R1, R2
-            end
-
-            16'd3: begin
-                instruction = 16'hF000;
-                // HALT
-            end
-
-            default: begin
-                instruction = 16'hF000;
-            end
-
-        endcase
-
-    end
-
-
-    // ========================================
     // TEST
     // ========================================
 
@@ -100,30 +72,23 @@ module cpu_tb;
         $dumpfile("cpu.vcd");
         $dumpvars(0, cpu_tb);
 
-
-        // Start CPU in reset
         reset = 1;
 
-
-        // Wait until falling edge
         @(negedge clk);
 
-        // Release reset
         reset = 0;
 
 
-        // Let CPU execute for 6 rising clock edges
         repeat (6) begin
             @(posedge clk);
         end
 
 
-        // Wait a little after final clock
         #5;
 
 
         // ====================================
-        // AUTOMATIC CHECKS
+        // AUTOMATIC VERIFICATION
         // ====================================
 
         if (dut.datapath_unit.reg_file.registers[1] !== 16'd5)
@@ -139,7 +104,7 @@ module cpu_tb;
             $error("CPU did not halt!");
 
 
-        $display("NEXA CPU TEST PASSED");
+        $display("NEXA CPU + ROM TEST PASSED");
 
         $finish;
 
