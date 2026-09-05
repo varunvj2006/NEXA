@@ -1,7 +1,10 @@
 module nexa_system #(
 
     parameter PROGRAM_FILE = "programs/program.hex",
-    parameter integer SPI_CLK_DIV = 2
+
+    parameter integer SPI_CLK_DIV = 2,
+
+    parameter integer SERVO_CLK_HZ = 27_000_000
 
 ) (
 
@@ -16,6 +19,12 @@ module nexa_system #(
     output logic spi_mosi,
     input  logic spi_miso,
     output logic spi_cs_n,
+
+    // ============================================
+    // SERVO
+    // ============================================
+
+    output logic servo_pwm,
 
     // ============================================
     // DEBUG
@@ -57,6 +66,13 @@ module nexa_system #(
 
 
     // ============================================
+    // SERVO
+    // ============================================
+
+    logic [15:0] servo_read_data;
+
+
+    // ============================================
     // CPU DEBUG / FLAGS
     // ============================================
 
@@ -68,27 +84,36 @@ module nexa_system #(
 
 
     // ============================================
-    // ADDRESS DECODING
+    // ADDRESS SELECTS
     // ============================================
 
     logic ram_selected;
+    logic servo_selected;
     logic spi_selected;
 
 
-    // RAM occupies 0x0000 - 0x00EF
+    // RAM: 0x0000 - 0x00DF
 
     assign ram_selected =
-        (data_address <= 16'h00EF);
+        (data_address <= 16'h00DF);
 
 
-    // SPI occupies 0x00F0 - 0x00F2
+    // Servo: 0x00E0
+
+    assign servo_selected =
+        (data_address == 16'h00E0);
+
+
+    // SPI: 0x00F0 - 0x00F2
 
     assign spi_selected =
         (data_address >= 16'h00F0) &&
         (data_address <= 16'h00F2);
 
 
-    // Only allow writes into RAM when RAM selected
+    // ============================================
+    // RAM WRITE ENABLE
+    // ============================================
 
     assign ram_write_enable =
         data_write_enable &&
@@ -96,7 +121,7 @@ module nexa_system #(
 
 
     // ============================================
-    // READ DATA MUX
+    // CPU READ DATA MUX
     // ============================================
 
     always_comb begin
@@ -104,6 +129,12 @@ module nexa_system #(
         if (ram_selected) begin
 
             data_read_data = ram_read_data;
+
+        end
+
+        else if (servo_selected) begin
+
+            data_read_data = servo_read_data;
 
         end
 
@@ -139,7 +170,7 @@ module nexa_system #(
 
 
     // ============================================
-    // NEXA CPU
+    // CPU
     // ============================================
 
     cpu cpu_unit (
@@ -187,6 +218,34 @@ module nexa_system #(
 
 
     // ============================================
+    // SERVO PERIPHERAL
+    // ============================================
+
+    servo_peripheral #(
+
+        .CLK_HZ(SERVO_CLK_HZ)
+
+    ) servo (
+
+        .clk(clk),
+        .reset(reset),
+
+        .bus_address(data_address),
+        .bus_write_data(data_write_data),
+
+        .bus_write_enable(
+            data_write_enable &&
+            servo_selected
+        ),
+
+        .bus_read_data(servo_read_data),
+
+        .servo_pwm(servo_pwm)
+
+    );
+
+
+    // ============================================
     // SPI PERIPHERAL
     // ============================================
 
@@ -201,8 +260,10 @@ module nexa_system #(
 
         .bus_address(data_address),
         .bus_write_data(data_write_data),
+
         .bus_write_enable(
-            data_write_enable && spi_selected
+            data_write_enable &&
+            spi_selected
         ),
 
         .bus_read_data(spi_read_data),

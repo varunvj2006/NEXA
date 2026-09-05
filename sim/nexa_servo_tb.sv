@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module nexa_system_tb;
+module nexa_servo_tb;
 
     logic clk;
     logic reset;
@@ -9,6 +9,8 @@ module nexa_system_tb;
     logic spi_mosi;
     logic spi_miso;
     logic spi_cs_n;
+
+    logic servo_pwm;
 
     logic [15:0] pc;
     logic [15:0] instruction;
@@ -23,7 +25,11 @@ module nexa_system_tb;
     nexa_system #(
 
         .PROGRAM_FILE("programs/program.hex"),
-        .SPI_CLK_DIV(2)
+
+        .SPI_CLK_DIV(2),
+
+        // Testbench clock is 1 MHz
+        .SERVO_CLK_HZ(1_000_000)
 
     ) dut (
 
@@ -35,6 +41,8 @@ module nexa_system_tb;
         .spi_miso(spi_miso),
         .spi_cs_n(spi_cs_n),
 
+        .servo_pwm(servo_pwm),
+
         .pc(pc),
         .instruction(instruction),
 
@@ -43,17 +51,12 @@ module nexa_system_tb;
     );
 
 
-    // ============================================
-    // SPI LOOPBACK
-    //
-    // Whatever NEXA sends comes back.
-    // ============================================
-
-    assign spi_miso = spi_mosi;
+    // SPI isn't being used in this test
+    assign spi_miso = 1'b0;
 
 
     // ============================================
-    // 100 MHz SIMULATION CLOCK
+    // 1 MHz CLOCK
     // ============================================
 
     initial begin
@@ -61,7 +64,7 @@ module nexa_system_tb;
         clk = 1'b0;
 
         forever begin
-            #5 clk = ~clk;
+            #500 clk = ~clk;
         end
 
     end
@@ -73,43 +76,57 @@ module nexa_system_tb;
 
     initial begin
 
-        $dumpfile("nexa_spi.vcd");
-        $dumpvars(0, nexa_system_tb);
+        $dumpfile("nexa_servo.vcd");
+        $dumpvars(0, nexa_servo_tb);
 
 
         reset = 1'b1;
 
-        repeat (2) begin
+        repeat (2)
             @(posedge clk);
-        end
 
         reset = 1'b0;
 
 
-        // Give NEXA plenty of time
-        repeat (100) begin
+        // CPU only needs a few cycles to execute,
+        // but wait more than one 20ms servo frame
+        // so active_angle gets latched.
+
+        repeat (25_000)
             @(posedge clk);
-        end
 
 
-        // R4 should contain received A5
+        // ========================================
+        // VERIFY MEMORY-MAPPED REGISTER
+        // ========================================
+
+        if (dut.servo.angle_reg !== 8'd90)
+            $error(
+                "Servo angle register should be 90!"
+            );
+
+
+        // ========================================
+        // VERIFY CONTROLLER RECEIVED ANGLE
+        // ========================================
+
         if (
-            dut.cpu_unit.datapath_unit.reg_file.registers[4]
-            !== 16'h00A5
+            dut.servo.servo_controller_unit.active_angle
+            !== 8'd90
         )
             $error(
-                "SPI failed: R4 should contain A5!"
+                "Servo controller did not latch 90 degrees!"
             );
 
 
         if (halt !== 1'b1)
             $error(
-                "NEXA did not halt!"
+                "CPU did not halt!"
             );
 
 
         $display(
-            "NEXA CPU + MEMORY-MAPPED SPI TEST PASSED"
+            "NEXA MEMORY-MAPPED SERVO TEST PASSED"
         );
 
 
