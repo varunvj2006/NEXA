@@ -26,6 +26,20 @@ ALU_FUNCTIONS = {
     "SHR": 0b110,
     "CMP": 0b111,
 }
+# ============================================================
+# NEXA PSEUDO-INSTRUCTION DEFINITIONS
+# ============================================================
+
+SERVO_ANGLE_ADDR = 0xE0
+
+# Temporary registers used internally by pseudo-instructions
+PSEUDO_ADDR_REG = 7
+PSEUDO_DATA_REG = 6
+
+
+PSEUDO_SIZES = {
+    "SERVO": 3,
+}
 
 #REGISTER PARSER
 
@@ -67,6 +81,78 @@ def parse_number(token):
         return int(token, 0)
     except ValueError:
         raise ValueError(f"Invalid number '{token}'")
+
+def encode_servo(tokens):
+    """
+    Pseudo-instruction:
+
+        SERVO angle
+
+    Example:
+
+        SERVO 90
+
+    Expands to:
+
+        LDI   R7, 224
+        LDI   R6, 90
+        STORE R6, [R7 + 0]
+    """
+
+    if len(tokens) != 2:
+        raise ValueError(
+            "SERVO syntax: SERVO angle"
+        )
+
+    angle = parse_number(tokens[1])
+
+    if angle < 0 or angle > 180:
+        raise ValueError(
+            "SERVO angle must be between 0 and 180"
+        )
+
+
+    # --------------------------------------------------------
+    # LDI R7, 0xE0
+    # --------------------------------------------------------
+
+    load_address = encode_ldi([
+        "LDI",
+        f"R{PSEUDO_ADDR_REG}",
+        str(SERVO_ANGLE_ADDR)
+    ])
+
+
+    # --------------------------------------------------------
+    # LDI R6, angle
+    # --------------------------------------------------------
+
+    load_angle = encode_ldi([
+        "LDI",
+        f"R{PSEUDO_DATA_REG}",
+        str(angle)
+    ])
+
+
+    # --------------------------------------------------------
+    # STORE R6, [R7 + 0]
+    # --------------------------------------------------------
+
+    store_angle = encode_memory(
+        [
+            "STORE",
+            f"R{PSEUDO_DATA_REG}",
+            f"[R{PSEUDO_ADDR_REG}+0]"
+        ],
+        "STORE"
+    )
+
+
+    return [
+        load_address,
+        load_angle,
+        store_angle
+    ]
 
 
 def encode_alu(tokens):
@@ -436,7 +522,20 @@ def assemble_file(input_filename, output_filename):
 
 
         # If it was not a label, then it is an instruction
-        instruction_address += 1
+# Determine how many machine instructions
+# this source line will generate.
+
+        tokens = clean_line.replace(",", " ").split()
+
+        mnemonic = tokens[0].upper()
+
+        if mnemonic in PSEUDO_SIZES:
+
+            instruction_address += PSEUDO_SIZES[mnemonic]
+
+        else:
+
+            instruction_address += 1
 
 
     # ========================================================
@@ -481,6 +580,30 @@ def assemble_file(input_filename, output_filename):
 
         try:
 
+            # --------------------------------------------------------
+            # CHECK FOR PSEUDO-INSTRUCTIONS
+            # --------------------------------------------------------
+
+            tokens = clean_line.replace(",", " ").split()
+
+            mnemonic = tokens[0].upper()
+
+
+            if mnemonic == "SERVO":
+
+                expanded_instructions = encode_servo(tokens)
+
+                machine_code.extend(
+                    expanded_instructions
+                )
+
+                continue
+
+
+            # --------------------------------------------------------
+            # NORMAL NEXA INSTRUCTION
+            # --------------------------------------------------------
+
             instruction = assemble_line(
                 clean_line,
                 labels
@@ -488,6 +611,7 @@ def assemble_file(input_filename, output_filename):
 
             if instruction is not None:
                 machine_code.append(instruction)
+
 
         except ValueError as error:
 
