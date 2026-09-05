@@ -45,6 +45,14 @@ module alu (
                 result = a ^ b;
             end
 
+            3'b101: begin
+                result = a << b[3:0];  //SHR
+            end
+
+            3'b110: begin
+                result = a >> b[3:0];  //SHL
+            end
+            
             //CMP
             3'b111: begin
                 result = a - b;

@@ -114,22 +114,16 @@ module cpu_tb;
         // AUTOMATIC VERIFICATION
         // ====================================
 
-        if (dut.datapath_unit.reg_file.registers[1] !== 16'd0)
-            $error("Loop failed: R1 should be 0!");
+        if (dut.datapath_unit.reg_file.registers[3] !== 16'd10)
+            $error("SHL failed!");
 
-        if (dut.datapath_unit.reg_file.registers[2] !== 16'd1)
-            $error("R2 incorrect!");
-
-        if (dut.datapath_unit.reg_file.registers[3] !== 16'd0)
-            $error("R3 incorrect!");
-
-        if (zero !== 1'b1)
-            $error("Final ZERO flag should be 1!");
+        if (dut.datapath_unit.reg_file.registers[4] !== 16'd5)
+            $error("SHR failed!");
 
         if (halt !== 1'b1)
             $error("CPU did not halt!");
 
-        $display("NEXA LOOP TEST PASSED");
+        $display("NEXA SHIFT TEST PASSED");
 
         $finish;
 

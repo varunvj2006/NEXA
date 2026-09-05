@@ -1,0 +1,9 @@
+; NEXA shift test
+
+LDI R1, 5
+LDI R2, 1
+
+SHL R3, R1, R2
+SHR R4, R3, R2
+
+HALT

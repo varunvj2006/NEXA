@@ -22,10 +22,8 @@ ALU_FUNCTIONS = {
     "AND": 0b010,
     "OR":  0b011,
     "XOR": 0b100,
-
-    # 101 and 110 are reserved for SHL/SHR,
-    # but we are not assembling them yet.
-
+    "SHL": 0b101,
+    "SHR": 0b110,
     "CMP": 0b111,
 }
 
