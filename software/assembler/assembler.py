@@ -234,7 +234,7 @@ def encode_memory(tokens, mnemonic):
 
 #JUMP ENCODER
 
-def encode_jump(tokens, mnemonic):
+def encode_jump(tokens, mnemonic, labels):
     """
     Format:
 
@@ -243,16 +243,24 @@ def encode_jump(tokens, mnemonic):
     Examples:
 
         JMP 10
-        JZ 5
-        JNZ 0x20
+        JZ equal
+        JNZ loop
     """
 
     if len(tokens) != 2:
         raise ValueError(
-            f"{mnemonic} syntax: {mnemonic} address"
+            f"{mnemonic} syntax: {mnemonic} address_or_label"
         )
 
-    address = parse_number(tokens[1])
+    target = tokens[1].upper()  #make it case sensitive
+
+    # First try a label
+    if target in labels:
+        address = labels[target]
+
+    else:
+        # Otherwise treat it as a number
+        address = parse_number(target)
 
     if address < 0 or address > 0xFFF:
         raise ValueError(
@@ -266,10 +274,9 @@ def encode_jump(tokens, mnemonic):
 
     return instruction
 
-
 #SINGLE LINE ASSEMBLER
 
-def assemble_line(line):
+def assemble_line(line,labels):
 
     # Remove comments
     line = line.split(";")[0]
@@ -349,7 +356,7 @@ def assemble_line(line):
     # --------------------------------------------------------
 
     if mnemonic in ("JMP", "JZ", "JNZ"):
-        return encode_jump(tokens, mnemonic)
+        return encode_jump(tokens, mnemonic, labels)
 
 
     # --------------------------------------------------------
@@ -372,31 +379,131 @@ def assemble_line(line):
 
 def assemble_file(input_filename, output_filename):
 
-    machine_code = []
+    labels = {}
+    source_lines = []
+
+    # ========================================================
+    # READ SOURCE FILE
+    # ========================================================
 
     with open(input_filename, "r") as source_file:
+        source_lines = source_file.readlines()
 
-        for line_number, line in enumerate(
-            source_file,
-            start=1
-        ):
 
-            try:
+    # ========================================================
+    # PASS 1
+    # FIND LABEL ADDRESSES
+    # ========================================================
 
-                instruction = assemble_line(line)
+    instruction_address = 0
 
-                if instruction is not None:
-                    machine_code.append(instruction)
+    for line_number, line in enumerate(
+        source_lines,
+        start=1
+    ):
 
-            except ValueError as error:
+        # Remove comments
+        clean_line = line.split(";")[0]
+        clean_line = clean_line.split("#")[0]
 
-                print(
-                    f"Assembler error on line "
-                    f"{line_number}: {error}"
+        clean_line = clean_line.strip()
+
+        # Ignore blank lines
+        if not clean_line:
+            continue
+
+
+        # --------------------------------------------
+        # LABEL
+        # --------------------------------------------
+
+        if clean_line.endswith(":"):
+
+            label_name = clean_line[:-1].strip().upper()   #make it case sensitive
+
+            if not label_name:
+                raise ValueError(
+                    f"Empty label on line {line_number}"
                 )
 
-                sys.exit(1)
+            if label_name in labels:
+                raise ValueError(
+                    f"Duplicate label '{label_name}' "
+                    f"on line {line_number}"
+                )
 
+            labels[label_name] = instruction_address
+
+            continue
+
+
+        # If it was not a label, then it is an instruction
+        instruction_address += 1
+
+
+    # ========================================================
+    # OPTIONAL DEBUG PRINT
+    # ========================================================
+
+    if labels:
+
+        print("Labels:")
+
+        for name, address in labels.items():
+            print(f"  {name} = {address}")
+
+
+    # ========================================================
+    # PASS 2
+    # ASSEMBLE INSTRUCTIONS
+    # ========================================================
+
+    machine_code = []
+
+    for line_number, line in enumerate(
+        source_lines,
+        start=1
+    ):
+
+        clean_line = line.split(";")[0]
+        clean_line = clean_line.split("#")[0]
+
+        clean_line = clean_line.strip()
+
+
+        # Ignore empty lines
+        if not clean_line:
+            continue
+
+
+        # Ignore label-only lines
+        if clean_line.endswith(":"):
+            continue
+
+
+        try:
+
+            instruction = assemble_line(
+                clean_line,
+                labels
+            )
+
+            if instruction is not None:
+                machine_code.append(instruction)
+
+        except ValueError as error:
+
+            print(
+                f"Assembler error on line "
+                f"{line_number}: {error}"
+            )
+
+            sys.exit(1)
+
+
+    # ========================================================
+    # WRITE HEX FILE
+    # ========================================================
 
     with open(output_filename, "w") as output_file:
 
@@ -414,7 +521,6 @@ def assemble_file(input_filename, output_filename):
     print(
         f"Output written to {output_filename}"
     )
-
 
 #MAIN
 
