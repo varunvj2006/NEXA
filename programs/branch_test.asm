@@ -1,0 +1,12 @@
+LDI R1, 5
+LDI R2, 5
+
+CMP R1, R2
+
+JZ 5
+
+LDI R3, 99
+
+LDI R3, 42
+
+HALT
