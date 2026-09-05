@@ -63,7 +63,9 @@ module cpu_tb;
     // INSTRUCTION MEMORY
     // ========================================
 
-    instruction_memory rom (
+    instruction_memory #(
+        .PROGRAM_FILE("programs/program.hex")
+    ) rom (
         .address(pc),
         .instruction(instruction)
     );

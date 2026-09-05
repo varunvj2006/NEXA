@@ -1,32 +1,48 @@
-module instruction_memory (
+module instruction_memory #(
+
+    parameter PROGRAM_FILE = "programs/program.hex",
+    parameter DEPTH = 4096
+
+) (
 
     input  logic [15:0] address,
     output logic [15:0] instruction
 
 );
 
+    logic [15:0] memory [0:DEPTH-1];
+
+    integer i;
+
+
+    // ============================================
+    // INITIALIZE PROGRAM MEMORY
+    // ============================================
+
+    initial begin
+
+        // Fill unused memory with HALT
+        for (i = 0; i < DEPTH; i = i + 1) begin
+            memory[i] = 16'hF000;
+        end
+
+        // Load assembled NEXA program
+        $readmemh(PROGRAM_FILE, memory);
+
+    end
+
+
+    // ============================================
+    // INSTRUCTION FETCH
+    // ============================================
+
     always_comb begin
 
-        case (address)
+        if (address < DEPTH)
+            instruction = memory[address];
 
-            16'd0: instruction = 16'h120A;
-            // LDI R1, 10
-
-            16'd1: instruction = 16'h142A;
-            // LDI R2, 42
-
-            16'd2: instruction = 16'h3443;
-            // STORE R2, [R1 + 3]
-
-            16'd3: instruction = 16'h2643;
-            // LOAD R3, [R1 + 3]
-
-            16'd4: instruction = 16'hF000;
-            // HALT
-
-            default: instruction = 16'hF000;
-
-        endcase
+        else
+            instruction = 16'hF000;
 
     end
 
