@@ -102,7 +102,7 @@ module cpu_tb;
         reset = 0;
 
 
-        repeat (10) begin
+        repeat (30) begin
             @(posedge clk);
         end
 
@@ -114,22 +114,22 @@ module cpu_tb;
         // AUTOMATIC VERIFICATION
         // ====================================
 
-        if (dut.datapath_unit.reg_file.registers[1] !== 16'd10)
-            $error("R1 incorrect!");
+        if (dut.datapath_unit.reg_file.registers[1] !== 16'd0)
+            $error("Loop failed: R1 should be 0!");
 
-        if (dut.datapath_unit.reg_file.registers[2] !== 16'd42)
+        if (dut.datapath_unit.reg_file.registers[2] !== 16'd1)
             $error("R2 incorrect!");
 
-        if (ram.memory[13] !== 16'd42)
-            $error("STORE failed!");
+        if (dut.datapath_unit.reg_file.registers[3] !== 16'd0)
+            $error("R3 incorrect!");
 
-        if (dut.datapath_unit.reg_file.registers[3] !== 16'd42)
-            $error("LOAD failed!");
+        if (zero !== 1'b1)
+            $error("Final ZERO flag should be 1!");
 
         if (halt !== 1'b1)
             $error("CPU did not halt!");
 
-        $display("NEXA LOAD/STORE TEST PASSED");
+        $display("NEXA LOOP TEST PASSED");
 
         $finish;
 

@@ -45,6 +45,11 @@ module alu (
                 result = a ^ b;
             end
 
+            //CMP
+            3'b111: begin
+                result = a - b;
+            end
+
             default: begin
                 result = 16'b0;
             end
