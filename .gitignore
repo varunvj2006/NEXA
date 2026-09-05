@@ -5,6 +5,17 @@
 *.lxt2
 *.vvp
 
+spi_sim
+*_sim
+*.vvp
+
+control_sim
+*_sim
+*.vvp
+
+cpu_sim
+*_sim
+*.vvp
 # Compiled simulations
 alu_sim
 reg_sim
@@ -25,3 +36,4 @@ build/
 .DS_Store
 Thumbs.db
 .vscode/
+
