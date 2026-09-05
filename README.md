@@ -13,7 +13,7 @@ computer architecture, hardware verification, graphics, peripherals, and PCB des
 - Register file
 - ALU
 - Memory-mapped peripherals
-- UART
+- SPI
 - HDMI graphics
 - External sensor interfaces
 - Custom carrier PCB
