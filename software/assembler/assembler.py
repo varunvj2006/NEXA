@@ -31,14 +31,19 @@ ALU_FUNCTIONS = {
 # ============================================================
 
 SERVO_ANGLE_ADDR = 0xE0
-
+ULTRASONIC_BASE_ADDR = 0xD0
+ULTRASONIC_CONTROL_OFFSET = 0
+ULTRASONIC_DISTANCE_OFFSET = 1
 # Temporary registers used internally by pseudo-instructions
 PSEUDO_ADDR_REG = 7
 PSEUDO_DATA_REG = 6
 
 
+
 PSEUDO_SIZES = {
     "SERVO": 3,
+    "RANGE_START": 3,
+    "RANGE_READ": 2,
 }
 
 #REGISTER PARSER
@@ -154,6 +159,128 @@ def encode_servo(tokens):
         store_angle
     ]
 
+def encode_range_start(tokens):
+    """
+    Pseudo-instruction:
+
+        RANGE_START
+
+    Expands to:
+
+        LDI   R7, 0xD0
+        LDI   R6, 1
+        STORE R6, [R7 + 0]
+
+    Writing 1 to 0xD0 starts one ultrasonic
+    distance measurement.
+    """
+
+    if len(tokens) != 1:
+        raise ValueError(
+            "RANGE_START takes no operands"
+        )
+
+
+    # --------------------------------------------------------
+    # LDI R7, 0xD0
+    # --------------------------------------------------------
+
+    load_address = encode_ldi([
+        "LDI",
+        f"R{PSEUDO_ADDR_REG}",
+        str(ULTRASONIC_BASE_ADDR)
+    ])
+
+
+    # --------------------------------------------------------
+    # LDI R6, 1
+    # --------------------------------------------------------
+
+    load_start_value = encode_ldi([
+        "LDI",
+        f"R{PSEUDO_DATA_REG}",
+        "1"
+    ])
+
+
+    # --------------------------------------------------------
+    # STORE R6, [R7 + 0]
+    # --------------------------------------------------------
+
+    start_measurement = encode_memory(
+        [
+            "STORE",
+            f"R{PSEUDO_DATA_REG}",
+            f"[R{PSEUDO_ADDR_REG}+{ULTRASONIC_CONTROL_OFFSET}]"
+        ],
+        "STORE"
+    )
+
+
+    return [
+        load_address,
+        load_start_value,
+        start_measurement
+    ]
+
+def encode_range_read(tokens):
+    """
+    Pseudo-instruction:
+
+        RANGE_READ RD
+
+    Example:
+
+        RANGE_READ R4
+
+    Expands to:
+
+        LDI  R7, 0xD0
+        LOAD R4, [R7 + 1]
+
+    Address 0xD1 contains the measured distance.
+    """
+
+    if len(tokens) != 2:
+        raise ValueError(
+            "RANGE_READ syntax: RANGE_READ RD"
+        )
+
+
+    destination_register = parse_register(
+        tokens[1]
+    )
+
+
+    # --------------------------------------------------------
+    # LDI R7, 0xD0
+    # --------------------------------------------------------
+
+    load_address = encode_ldi([
+        "LDI",
+        f"R{PSEUDO_ADDR_REG}",
+        str(ULTRASONIC_BASE_ADDR)
+    ])
+
+
+    # --------------------------------------------------------
+    # LOAD RD, [R7 + 1]
+    # --------------------------------------------------------
+
+    read_distance = encode_memory(
+        [
+            "LOAD",
+            f"R{destination_register}",
+            f"[R{PSEUDO_ADDR_REG}+{ULTRASONIC_DISTANCE_OFFSET}]"
+        ],
+        "LOAD"
+    )
+
+
+    return [
+        load_address,
+        read_distance
+    ]
 
 def encode_alu(tokens):
     """
@@ -599,6 +726,22 @@ def assemble_file(input_filename, output_filename):
 
                 continue
 
+            if mnemonic == "RANGE_START":
+
+                machine_code.extend(
+                    encode_range_start(tokens)
+                )
+
+                continue
+
+
+            if mnemonic == "RANGE_READ":
+
+                machine_code.extend(
+                    encode_range_read(tokens)
+                )
+
+                continue
 
             # --------------------------------------------------------
             # NORMAL NEXA INSTRUCTION

@@ -1,61 +1,52 @@
 ; ============================================
-; NEXA ULTRASONIC TEST
+; NEXA ULTRASONIC TEST USING PSEUDOS
 ; ============================================
 
 
-; R6 = ultrasonic base address
-;
-; 0xD0 = 208 decimal
+; Start ultrasonic measurement
 
-LDI R6, 208
+RANGE_START
 
 
-; --------------------------------------------
-; Start measurement
-;
-; write 1 to D0
-; --------------------------------------------
+; R7 = ultrasonic base address
+; Needed for status polling
 
-LDI R1, 1
-
-STORE R1, [R6 + 0]
+LDI R7, 208
 
 
-; --------------------------------------------
-; Expected completed status:
+; Expected successful completed status:
 ;
 ; timeout = 0
 ; done    = 1
 ; busy    = 0
 ;
-; binary 010 = decimal 2
-; --------------------------------------------
+; 010 binary = 2
 
 LDI R3, 2
 
 
 wait_range:
 
-; Read status D2
+; Read ultrasonic status
 
-LOAD R2, [R6 + 2]
+LOAD R2, [R7 + 2]
 
 
-; Finished?
+; Check whether status == 2
 
 CMP R2, R3
 
 
-; No → keep checking
+; Not done yet?
+; Loop back and poll again.
 
 JNZ wait_range
 
 
-; --------------------------------------------
-; Read distance from D1
-; --------------------------------------------
+; Measurement finished.
+; Read distance into R4.
 
-LOAD R4, [R6 + 1]
+RANGE_READ R4
 
 
 HALT
