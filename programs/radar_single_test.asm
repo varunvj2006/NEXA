@@ -1,0 +1,10 @@
+SERVO 90
+RANGE_START
+LDI R3, 2
+
+wait_range:
+RANGE_STATUS R2
+CMP R2, R3
+JNZ wait_range
+RANGE_READ R4
+HALT
