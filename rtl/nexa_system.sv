@@ -4,12 +4,15 @@ module nexa_system #(
 
     parameter integer SPI_CLK_DIV = 2,
 
-    parameter integer SERVO_CLK_HZ = 27_000_000
+    parameter integer SERVO_CLK_HZ = 27_000_000,
+
+    parameter integer ULTRASONIC_CLK_HZ = 27_000_000
 
 ) (
 
     input logic clk,
     input logic reset,
+
 
     // ============================================
     // SPI PINS
@@ -20,11 +23,21 @@ module nexa_system #(
     input  logic spi_miso,
     output logic spi_cs_n,
 
+
     // ============================================
     // SERVO
     // ============================================
 
     output logic servo_pwm,
+
+
+    // ============================================
+    // HC-SR04
+    // ============================================
+
+    output logic ultrasonic_trig,
+    input  logic ultrasonic_echo,
+
 
     // ============================================
     // DEBUG
@@ -73,6 +86,13 @@ module nexa_system #(
 
 
     // ============================================
+    // ULTRASONIC
+    // ============================================
+
+    logic [15:0] ultrasonic_read_data;
+
+
+    // ============================================
     // CPU DEBUG / FLAGS
     // ============================================
 
@@ -88,14 +108,39 @@ module nexa_system #(
     // ============================================
 
     logic ram_selected;
+    logic ultrasonic_selected;
     logic servo_selected;
     logic spi_selected;
 
 
-    // RAM: 0x0000 - 0x00DF
+    // ============================================
+    // MEMORY MAP
+    //
+    // 0000 - 00CF : RAM
+    //
+    // 00D0 : Ultrasonic control
+    // 00D1 : Ultrasonic distance
+    // 00D2 : Ultrasonic status
+    //
+    // 00E0 : Servo angle
+    //
+    // 00F0 : SPI TX
+    // 00F1 : SPI RX
+    // 00F2 : SPI status
+    // ============================================
+
+
+    // RAM: 0x0000 - 0x00CF
 
     assign ram_selected =
-        (data_address <= 16'h00DF);
+        (data_address <= 16'h00CF);
+
+
+    // Ultrasonic: 0x00D0 - 0x00D2
+
+    assign ultrasonic_selected =
+        (data_address >= 16'h00D0) &&
+        (data_address <= 16'h00D2);
 
 
     // Servo: 0x00E0
@@ -122,6 +167,9 @@ module nexa_system #(
 
     // ============================================
     // CPU READ DATA MUX
+    //
+    // Only one peripheral should respond to a
+    // given address.
     // ============================================
 
     always_comb begin
@@ -129,6 +177,12 @@ module nexa_system #(
         if (ram_selected) begin
 
             data_read_data = ram_read_data;
+
+        end
+
+        else if (ultrasonic_selected) begin
+
+            data_read_data = ultrasonic_read_data;
 
         end
 
@@ -213,6 +267,37 @@ module nexa_system #(
 
         .write_data(data_write_data),
         .read_data(ram_read_data)
+
+    );
+
+
+    // ============================================
+    // ULTRASONIC PERIPHERAL
+    // ============================================
+
+    ultrasonic_peripheral #(
+
+        .CLK_HZ(ULTRASONIC_CLK_HZ)
+
+    ) ultrasonic (
+
+        .clk(clk),
+        .reset(reset),
+
+        .bus_address(data_address),
+        .bus_write_data(data_write_data),
+
+        .bus_write_enable(
+            data_write_enable &&
+            ultrasonic_selected
+        ),
+
+        .bus_read_data(
+            ultrasonic_read_data
+        ),
+
+        .trig(ultrasonic_trig),
+        .echo(ultrasonic_echo)
 
     );
 
